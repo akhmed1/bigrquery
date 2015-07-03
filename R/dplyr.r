@@ -122,9 +122,52 @@ sql_select.bigquery <- function(con, select, from, where = NULL,
                                 order_by = NULL, limit = NULL,
                                 offset = NULL, ...) {
 
-  dplyr:::sql_select.DBIConnection(con, select, from, where = where,
-    group_by = group_by, having = having, order_by = order_by,
-    limit = limit, offset = offset, ...)
+  out <- vector("list", 8)
+  names(out) <- c("select", "from", "where", "group_by", "having", "order_by",
+                  "limit", "offset")
+
+  assert_that(is.character(select), length(select) > 0L)
+  out$select <- dplyr::build_sql("SELECT ",
+                                 dplyr::escape(select, collapse = ", ", con = con))
+
+  assert_that(is.character(from), length(from) == 1L)
+  out$from <- dplyr::build_sql("FROM ", from, con = con)
+
+  if (length(where) > 0L) {
+    assert_that(is.character(where))
+    out$where <- dplyr::build_sql("WHERE ",
+                                  dplyr::escape(where, collapse = " AND ", con = con))
+  }
+
+  if (!is.null(group_by)) {
+    assert_that(is.character(group_by), length(group_by) > 0L)
+    out$group_by <- dplyr::build_sql("GROUP EACH BY ",
+                                     dplyr::escape(group_by, collapse = ", ", con = con))
+  }
+
+  if (!is.null(having)) {
+    assert_that(is.character(having), length(having) == 1L)
+    out$having <- dplyr::build_sql("HAVING ",
+                                   dplyr::escape(having, collapse = ", ", con = con))
+  }
+
+  if (!is.null(order_by)) {
+    assert_that(is.character(order_by), length(order_by) > 0L)
+    out$order_by <- dplyr::build_sql("ORDER BY ",
+                                     dplyr::escape(order_by, collapse = ", ", con = con))
+  }
+
+  if (!is.null(limit)) {
+    assert_that(is.integer(limit), length(limit) == 1L)
+    out$limit <- dplyr::build_sql("LIMIT ", limit, con = con)
+  }
+
+  if (!is.null(offset)) {
+    assert_that(is.integer(offset), length(offset) == 1L)
+    out$offset <- dplyr::build_sql("OFFSET ", offset, con = con)
+  }
+
+  dplyr::escape(unname(dplyr:::compact(out)), collapse = "\n", parens = FALSE, con = con)
 }
 
 #' @export
