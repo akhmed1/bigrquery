@@ -115,6 +115,30 @@ mutate_.tbl_bigquery <- function(.data, ..., .dots) {
 
 # SQL -------------------------------------------------------------------------
 
+# ((Temporary fix before "cross_join" is incorporated into dplyr))
+#' Cross-Joins two tbls together.
+#' @param x,y tbls to join
+#' @param copy If \code{x} and \code{y} are not from the same data source,
+#'   and \code{copy} is \code{TRUE}, then \code{y} will be copied into the
+#'   same src as \code{x}.  This allows you to join tables across srcs, but
+#'   it is a potentially expensive operation so you must opt into it.
+#' @param ... other parameters passed onto methods
+#' @name join
+#' @rdname join
+#' @export
+cross_join <- function(x, y, copy = FALSE, ...) {
+  UseMethod("cross_join")
+}
+
+#' @export
+#' @rdname join
+cross_join.tbl_bigquery <- function(x, y, copy = FALSE, ...) {
+  y <- dplyr:::auto_copy(x, y, copy)
+  sql <- dplyr::sql_join(x$src$con, x, y, type = "cross")
+  dplyr:::update.tbl_sql(tbl(x$src, sql), group_by = dplyr::groups(x))
+}
+# ((End of temporary fix))
+
 #' @export
 #' @importFrom dplyr sql_select
 sql_select.bigquery <- function(con, select, from, where = NULL,
