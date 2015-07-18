@@ -194,6 +194,30 @@ sql_select.bigquery <- function(con, select, from, where = NULL,
   dplyr::escape(unname(dplyr:::compact(out)), collapse = "\n", parens = FALSE, con = con)
 }
 
+
+#' @export
+#' @importFrom dplyr sql_set_op
+sql_set_op.bigquery <- function(con, x, y, method) {
+  if (method != "UNION") {
+    stop("Set operations other than UNION are not supported by BigQuery", call. = FALSE)
+  }
+
+  var_list <- dplyr:::sql_vector(
+    sql_escape_ident(con, x$select),
+    collapse=",", parens = FALSE, con = con
+  )
+
+  sql <- dplyr::build_sql(
+    'SELECT ', var_list, ' FROM ',
+    '(',x$query$sql,'),',
+    '(',y$query$sql,')',
+    con = con
+  )
+
+  attr(sql, "vars") <- x$select
+  sql
+}
+
 #' @export
 #' @importFrom dplyr sql_subquery
 sql_subquery.bigquery <- function(con, sql, name =  dplyr::unique_name(), ...) {
@@ -469,3 +493,4 @@ sql_escape_ident.bigquery <- function(con, x) {
 
   y
 }
+
