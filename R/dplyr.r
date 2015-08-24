@@ -230,6 +230,7 @@ src_translate_env.src_bigquery <- function(x) {
     dplyr::sql_translator(.parent = dplyr::base_agg,
       n = function() dplyr::sql("count(*)"),
       "%||%" = dplyr::sql_prefix("concat"),
+      n_distinct = function(x) dplyr::build_sql("count(distinct(",x,"))"),
       sd =  dplyr::sql_prefix("stddev")
     ),
     dplyr::sql_translator(.parent = dplyr::base_win,
