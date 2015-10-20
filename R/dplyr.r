@@ -241,16 +241,49 @@ src_translate_env.src_bigquery <- function(x) {
       cummean = win_bq("mean"),
       cumsum  = win_bq("sum"),
       cummin  = win_bq("min"),
-      cummax  = win_bq("max")
+      cummax  = win_bq("max"),
+      lag  = function(x, n = 1L, default = NA, order = NULL) {
+        bigrquery:::over(
+          dplyr:::build_sql("LAG", list(x, n, default)),
+          dplyr:::partition_group(),
+          order %||% dplyr:::partition_order()
+        )
+      }
     )
   )
+}
+
+# BigQuery requires different partitioning
+over <- function (expr, partition = NULL, order = NULL, frame = NULL)
+{
+  args <- (!is.null(partition)) + (!is.null(order)) + (!is.null(frame))
+  if (args == 0) {
+    stop("Must supply at least one of partition, order, frame",
+         call. = FALSE)
+  }
+  if (!is.null(partition)) {
+    partition <- dplyr::build_sql("PARTITION BY ", dplyr:::sql_vector(partition,
+                                                                      parens = FALSE,
+                                                                      collapse = ", "))
+  }
+  if (!is.null(order)) {
+    order <- dplyr::build_sql("ORDER BY ", dplyr:::sql_vector(order, collapse = ", "))
+  }
+  if (!is.null(frame)) {
+    if (is.numeric(frame))
+      frame <- dplyr:::rows(frame[1], frame[2])
+    frame <- dplyr::build_sql("ROWS ", frame)
+  }
+  over <- dplyr:::sql_vector(dplyr:::compact(list(partition, order, frame)),
+                             parens = TRUE)
+  dplyr::build_sql(expr, " OVER ", over)
 }
 
 # BQ doesn't need frame clause
 win_bq <- function(f) {
   force(f)
   function(x) {
-    dplyr:::over(
+    bigrquery:::over(
       dplyr::build_sql(dplyr::sql(f), list(x)),
       dplyr:::partition_group(),
       dplyr:::partition_order()
@@ -273,3 +306,4 @@ sql_escape_ident.bigquery <- function(con, x) {
 
   y
 }
+
