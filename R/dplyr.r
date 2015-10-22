@@ -115,7 +115,7 @@ sql_select.bigquery <- function(con, select, from, where = NULL,
 
 #' @export
 #' @importFrom dplyr sql_subquery
-sql_subquery.bigquery <- function(con, sql, name =  dplyr::unique_name(), ...) {
+sql_subquery.bigquery <- function(con, sql, name =  dplyr:::unique_name(), ...) {
   if (dplyr::is.ident(sql)) return(sql)
 
   dplyr::build_sql("(", sql, ") AS ", dplyr::ident(name), con = con)
