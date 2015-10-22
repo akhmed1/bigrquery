@@ -287,6 +287,17 @@ win_bq <- function(f) {
   }
 }
 
+
+win_bq_ordered <- function(f) {
+  force(f)
+  function(x, order = NULL) {
+    bigrquery:::over(
+      dplyr::build_sql(dplyr::sql(f), list(x)),
+      dplyr:::partition_group(),
+      order %||% dplyr:::partition_order())
+  }
+}
+
 win_bq_rank <- function(f) {
   force(f)
   function(order = NULL) {
