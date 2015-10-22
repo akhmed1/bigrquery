@@ -463,13 +463,9 @@ src_translate_env.src_bigquery <- function(x) {
       cumsum  = win_bq("sum"),
       cummin  = win_bq("min"),
       cummax  = win_bq("max"),
-      lag  = function(x, n = 1L, default = NA, order = NULL) {
-        bigrquery:::over(
-          dplyr:::build_sql("LAG", list(x, n, default)),
-          dplyr:::partition_group(),
-          order %||% dplyr:::partition_order()
-        )
-      }
+      rank  = win_bq_rank("rank"),
+      lag  = win_bq_laglead("lag"),
+      lead  = win_bq_laglead("lead")
     )
   )
 }
@@ -511,6 +507,28 @@ win_bq <- function(f) {
     )
   }
 }
+
+win_bq_rank <- function(f) {
+  force(f)
+  function(order = NULL) {
+    bigrquery:::over(
+      dplyr::build_sql(dplyr::sql(f), list()),
+      dplyr:::partition_group(),
+      order %||% dplyr:::partition_order())
+  }
+}
+
+win_bq_laglead <- function(f) {
+  force(f)
+  function(x, n = 1L, default = NA, order = NULL) {
+    bigrquery:::over(
+      dplyr:::build_sql(dplyr::sql(f), list(x, n, default)),
+      dplyr:::partition_group(),
+      order %||% dplyr:::partition_order()
+    )
+  }
+}
+
 
 #' @export
 #' @importFrom dplyr sql_escape_string
