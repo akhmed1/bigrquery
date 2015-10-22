@@ -244,7 +244,9 @@ src_translate_env.src_bigquery <- function(x) {
       cummax  = win_bq("max"),
       rank  = win_bq_rank("rank"),
       lag  = win_bq_laglead("lag"),
-      lead  = win_bq_laglead("lead")
+      lead  = win_bq_laglead("lead"),
+      first_value = win_bq_ordered("first_value"),
+      last_value = win_bq_ordered("last_value")
     )
   )
 }
