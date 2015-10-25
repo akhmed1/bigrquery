@@ -1,3 +1,25 @@
+#' Count the total number of available tables in dataset.
+#'
+#' @inheritParams get_table
+#' @return the total number of tables
+#' @family tables
+#' @seealso API documentation:
+#'   \url{https://developers.google.com/bigquery/docs/reference/v2/tables/list}
+#' @export
+#' @examples
+#' \dontrun{
+#' count_tables("publicdata", "samples")
+#' count_tables("githubarchive", "github")
+#' }
+count_tables <- function(project, dataset) {
+  assert_that(is.string(project), is.string(dataset))
+
+  url <- sprintf("projects/%s/datasets/%s/tables", project, dataset)
+  query <- list()
+  query$maxResults <- 1
+  (bigrquery:::bq_get(url, query = query)$totalItems)
+}
+
 #' List available tables in dataset.
 #'
 #' @inheritParams get_table
@@ -14,7 +36,8 @@
 #' list_tables("githubarchive", "github")
 #' list_tables("publicdata", "samples", max_results = 2)
 #' }
-list_tables <- function(project, dataset, max_results = NULL) {
+list_tables <- function(project, dataset,
+                        max_results = count_tables(project, dataset)) {
   assert_that(is.string(project), is.string(dataset))
   if (!is.null(max_results)) {
     assert_that(is.numeric(max_results), length(max_results) == 1)
