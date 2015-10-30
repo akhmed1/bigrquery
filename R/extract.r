@@ -167,8 +167,10 @@ collect_by_export <- function(data,
     cat(paste0("\nParsing ",num_files," local .csv.gz files from ",
                local_dir, " into a data.frame ...\n"))
 
-  df <- lapply(files, function(f) read_csv(local_file)) %>%
-    bind_rows()
+  df <- lapply(files, function(f) {
+    local_file <- paste0(local_dir, f)
+    (read_csv(local_file))
+  }) %>% bind_rows()
 
   # Erase the temp table
   delete_table(project = proj,
