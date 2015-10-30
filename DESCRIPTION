@@ -12,6 +12,7 @@ Imports:
     httr,
     jsonlite,
     assertthat,
+    stringr,
     R6 (>= 2.0.0),
     dplyr (>= 0.3.0),
     lazyeval (>= 0.1.10)
