@@ -86,3 +86,94 @@ extract_exec <- function(source_table, project, destination_uris,
     (0)
   }
 }
+
+
+#' Collect the data by exporting into Google Cloud Storage.
+#'
+#' This is a high-level function that utilizes \code{\link{extract_exec}}
+#' in order to export BigQuery table into Google Cloud Storage bucket,
+#' download the resulting .csv.gz files locally, and subsequently
+#' parse these files into a local data.frame
+#'
+#' @param data Reference to the BigQuery table or query to be collected
+#' @param gs_bucket Google Cloud Storage bucket to be
+#'        used as a temporary storage for export
+#' @param local_dir Local directory to be used as a temporary local
+#'        storage for downloaded .csv.gz files
+#' @param quiet if \code{FALSE}, prints informative status messages
+#' @return the local data.frame containing the required data
+#' @examples
+#' \dontrun{
+#' Sys.setenv(GS_TEMP_BUCKET = "<YOUR_GS_BUCKET>")
+#'
+#' df <-
+#'   src_bigquery(project="<PROJECT>", dataset="<DATASET>") %>%
+#'   tbl("<TABLE>") %>%
+#'   collect_by_export()
+#' }
+#' @export
+collect_by_export <- function(data,
+                              gs_bucket = Sys.getenv("GS_TEMP_BUCKET"),
+                              local_dir = tempdir(),
+                              quiet = getOption("bigquery.quiet")) {
+
+  is_quiet <- function(x) isTRUE(quiet)
+
+  # Google Storage URL base
+  GS_URL <- "https://storage.googleapis.com"
+
+  # Compute data into temp table
+  temp_table <-
+    tempfile(pattern = "export", tmpdir = "") %>%
+    str_replace_all("/","")
+
+  remote_df <- data %>%
+    compute(name = temp_table, temporary = FALSE)
+
+  # Extract temp table to GS
+  proj <- remote_df$src$con$project
+  dataset <- remote_df$src$con$dataset
+
+  if (!is_quiet())
+    cat(paste0("\nExtracting data into Google Cloud Storage bucket ",
+               gs_bucket, " ...\n"))
+
+  num_files <- extract_exec(
+    paste0(proj,":",dataset,".", temp_table),
+    project = proj,
+    paste0("gs://", gs_bucket, "/", temp_table, "_*", ".csv.gz"),
+    compression = "GZIP",
+    destination_format = "CSV") %>%
+    as.integer()
+
+  # Find out all files
+  files <- sprintf(paste0(temp_table, "_%012d", ".csv.gz"),
+                   0:(num_files-1))
+
+  # Download all files from GS into tempdir
+  if (!is_quiet())
+    cat(paste0("\nDownloading ",num_files," .csv.gz files from ",
+               gs_bucket, " into local ", local_dir, "...\n"))
+
+  lapply(files, function(f) {
+    local_file <- paste0(local_dir, f)
+    GET(  url = paste0(GS_URL,"/",gs_bucket, "/", f),
+          write_disk(local_file, overwrite = TRUE),
+          config(token = get_access_cred()),
+          progress())
+  })
+
+  if (!is_quiet())
+    cat(paste0("\nParsing ",num_files," local .csv.gz files from ",
+               local_dir, " into a data.frame ...\n"))
+
+  df <- lapply(files, function(f) read_csv(local_file)) %>%
+    bind_rows()
+
+  # Erase the temp table
+  delete_table(project = proj,
+               dataset = dataset,
+               table = temp_table)
+
+  (df)
+}
