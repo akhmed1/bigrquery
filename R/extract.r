@@ -121,6 +121,7 @@ collect_by_export <- function(data,
 
   # Google Storage URL base
   GS_URL <- "https://storage.googleapis.com"
+  GS_DOWNLOAD_ATTEMPTS <- 10L
 
   # Compute data into temp table
   temp_table <-
@@ -157,10 +158,28 @@ collect_by_export <- function(data,
 
   lapply(files, function(f) {
     local_file <- paste0(local_dir, f)
-    GET(  url = paste0(GS_URL,"/",gs_bucket, "/", f),
-          write_disk(local_file, overwrite = TRUE),
-          config(token = get_access_cred()),
-          progress())
+
+    # Make several attempts to download
+    for (i in 1:GS_DOWNLOAD_ATTEMPTS) {
+      get_result <-
+        try(GET(url = paste0(GS_URL,"/",gs_bucket, "/", f),
+                write_disk(local_file, overwrite = TRUE),
+                config(token = get_access_cred()),
+                progress()),
+            silent = is_quiet())
+
+      # No error. Proceed
+      if (!inherits(get_result,'try-error')) break
+
+      # There was an error.
+      if (i >= GS_DOWNLOAD_ATTEMPTS) {
+        stop("**ERROR: Couldn't download ", local_file,
+             " after ", GS_DOWNLOAD_ATTEMPTS, " attempts")
+      } else {
+        Sys.sleep(30) # Wait 30 seconds. Repeat.
+      }
+    }
+
   })
 
   if (!is_quiet())
