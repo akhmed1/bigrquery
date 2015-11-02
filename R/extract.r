@@ -166,7 +166,7 @@ collect_by_export <- function(data,
                 write_disk(local_file, overwrite = TRUE),
                 config(token = get_access_cred()),
                 progress()),
-            silent = is_quiet())
+            silent = TRUE)
 
       # No error. Proceed
       if (!inherits(get_result,'try-error')) break
