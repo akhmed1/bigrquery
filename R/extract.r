@@ -117,7 +117,7 @@ collect_by_export <- function(data,
                               local_dir = tempdir(),
                               quiet = getOption("bigquery.quiet")) {
 
-  is_quiet <- function(x) isTRUE(quiet)
+  is_quiet <- function() isTRUE(quiet)
 
   # Google Storage URL base
   GS_URL <- "https://storage.googleapis.com"
@@ -156,6 +156,9 @@ collect_by_export <- function(data,
     cat(paste0("\nDownloading ",num_files," .csv.gz files from ",
                gs_bucket, " into local ", local_dir, "...\n"))
 
+  # Should httr report download progress?
+  httr_quiet_config <- if (!is_quiet()) (progress()) else (NULL)
+
   lapply(files, function(f) {
     local_file <- paste0(local_dir, f)
 
@@ -165,7 +168,7 @@ collect_by_export <- function(data,
         try(GET(url = paste0(GS_URL,"/",gs_bucket, "/", f),
                 write_disk(local_file, overwrite = TRUE),
                 config(token = get_access_cred()),
-                progress()),
+                httr_quiet_config),
             silent = TRUE)
 
       # No error. Proceed
