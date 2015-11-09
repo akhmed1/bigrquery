@@ -243,6 +243,8 @@ src_translate_env.src_bigquery <- function(x) {
       cummin  = win_bq("min"),
       cummax  = win_bq("max"),
       rank  = win_bq_rank("rank"),
+      dense_rank  = win_bq_rank("dense_rank"),
+      row_number  = win_bq_rank("row_number"),
       lag  = win_bq_laglead("lag"),
       lead  = win_bq_laglead("lead"),
       first = win_bq_ordered("first_value"),
