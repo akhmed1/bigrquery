@@ -126,7 +126,8 @@ collect_by_export <- function(data,
   # Compute data into temp table
   temp_table <-
     tempfile(pattern = "export", tmpdir = "") %>%
-    str_replace_all("/","")
+    str_replace_all("/","") %>% # remove Linux slash
+    str_replace_all("\\\\","") # remove Windows backslash
 
   remote_df <- data %>%
     compute(name = temp_table, temporary = FALSE)
