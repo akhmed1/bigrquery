@@ -101,6 +101,7 @@ extract_exec <- function(source_table, project, destination_uris,
 #' @param local_dir Local directory to be used as a temporary local
 #'        storage for downloaded .csv.gz files
 #' @param quiet if \code{FALSE}, prints informative status messages
+#' @param col_types Types of columns (if guessed incorrectly) in the format recognized by \code{readr::read_csv}
 #' @return the local data.frame containing the required data
 #' @examples
 #' \dontrun{
@@ -115,7 +116,9 @@ extract_exec <- function(source_table, project, destination_uris,
 collect_by_export <- function(data,
                               gs_bucket = Sys.getenv("GS_TEMP_BUCKET"),
                               local_dir = tempdir(),
-                              quiet = getOption("bigquery.quiet")) {
+                              quiet = getOption("bigquery.quiet"),
+                              col_types = NULL,
+                              ...) {
 
   is_quiet <- function() isTRUE(quiet)
 
@@ -192,7 +195,7 @@ collect_by_export <- function(data,
 
   df <- lapply(files, function(f) {
     local_file <- paste0(local_dir, f)
-    (read_csv(local_file))
+    (read_csv(local_file, col_types = col_types))
   }) %>% bind_rows()
 
   # Erase the temp table
