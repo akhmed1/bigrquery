@@ -164,7 +164,7 @@ collect_by_export <- function(data,
   httr_quiet_config <- if (!is_quiet()) (progress()) else (NULL)
 
   lapply(files, function(f) {
-    local_file <- paste0(local_dir, f)
+    local_file <- paste0(local_dir, "/", f)
 
     # Make several attempts to download
     for (i in 1:GS_DOWNLOAD_ATTEMPTS) {
@@ -194,7 +194,7 @@ collect_by_export <- function(data,
                local_dir, " into a data.frame ...\n"))
 
   df <- lapply(files, function(f) {
-    local_file <- paste0(local_dir, f)
+    local_file <- paste0(local_dir, "/", f)
     (read_csv(local_file, col_types = col_types))
   }) %>% bind_rows()
 
